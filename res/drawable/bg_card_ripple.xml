@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 可点击卡片：bg_card + 按压涟漪 -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="#337EB0F5">
+    <item android:drawable="@drawable/bg_card" />
+</ripple>

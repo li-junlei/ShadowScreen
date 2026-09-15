@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.ljl.xrealscreen"
+    android:versionCode="6"
+    android:versionName="0.6">
+
+    <uses-sdk android:minSdkVersion="30" android:targetSdkVersion="34" />
+
+    <!-- public VirtualDisplay 创建前提 -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- ALWAYS_UNLOCKED flag 的 WAKE_LOCK 要求 -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- Shizuku 标准接入：服务端 BinderSender 按此权限决定是否推送 binder -->
+    <uses-permission android:name="moe.shizuku.manager.permission.API_V23" />
+
+    <application
+        android:name=".App"
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:allowBackup="false">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/AppTheme">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".SubScreenService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="External display virtual screen host" />
+        </service>
+
+        <!-- Shizuku 客户端：接收 Shizuku 服务端推送的 binder -->
+        <provider
+            android:name="rikka.shizuku.ShizukuProvider"
+            android:authorities="com.ljl.xrealscreen.shizuku"
+            android:multiprocess="false"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
+    </application>
+
+    <queries>
+        <package android:name="moe.shizuku.privileged.api" />
+    </queries>
+</manifest>

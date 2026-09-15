@@ -1,0 +1,12 @@
+# build artifacts
+build/
+classes/
+gen/
+stub_classes/
+dexout/
+*.apk
+*.unsigned.apk
+*.aligned.apk
+
+# signing
+*.keystore
