@@ -38,19 +38,18 @@ public class SubScreenService extends Service
     private static final int FLAG_TRUSTED = 1 << 10;
     private static final int FLAG_OWN_DISPLAY_GROUP = 1 << 11;
     private static final int FLAG_ALWAYS_UNLOCKED = 1 << 12;
-    private static final int FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS = 1 << 9;
     private static final int FLAG_TOUCH_FEEDBACK_DISABLED = 1 << 13;
     private static final int FLAG_SUPPORTS_TOUCH = 1 << 6;
     /**
-     * Shizuku 通路 flag：android-display-mirror 的 auto() 组合（该设备上经用户验证无跳回）
-     * + PRESENTATION（满足 launchAllowedByDisplayPolicy 对 VIRTUAL 类型屏的要求）。
+     * Shizuku 通路 flag：沿用已验证的 trusted 组合，保留 PRESENTATION
+     * （满足 launchAllowedByDisplayPolicy 对 VIRTUAL 类型屏的要求）。
+     * 不启用系统装饰，避免 HyperOS 在副屏启动系统桌面并干扰主屏手势/图标。
      * 注意不带 OWN_FOCUS（mirror 实测组合不含它也可承载 task）。
      */
     private static final int FLAGS_TRUSTED = DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
             | DisplayManager.VIRTUAL_DISPLAY_FLAG_PRESENTATION
             | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
             | FLAG_TRUSTED | FLAG_OWN_DISPLAY_GROUP | FLAG_ALWAYS_UNLOCKED
-            | FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS
             | FLAG_TOUCH_FEEDBACK_DISABLED | FLAG_SUPPORTS_TOUCH;
     /** 普通通路 flag 上限（TRUSTED/OWN_GROUP 需 ADD_TRUSTED_DISPLAY） */
     private static final int FLAGS_NORMAL = DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
