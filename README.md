@@ -1,110 +1,69 @@
 # ShadowScreen
 
-Turn any external display (AR glasses, portable monitor, ...) connected to your
-Android phone into a **real secondary screen** that can independently host app
-tasks — apps launched there stay there, instead of jumping back to the phone.
+[English](README.en.md)
 
-Works over USB-C DisplayPort Alt Mode displays. No root required (needs
-[Shizuku](https://github.com/RikkaApps/Shizuku) running via wireless debugging / root).
+将通过 USB-C DisplayPort Alt Mode 连接的 AR 眼镜、便携显示器等设备，变成可独立运行 Android 应用的副屏。通过 Shizuku 创建受信任的虚拟屏，解决副屏应用打开后续页面时跳回手机主屏的问题。
 
-## The problem
+当前版本：**v0.8**。无需 root；需要运行并授权 [Shizuku](https://shizuku.rikka.app/)。配合 [Extend](https://github.com/jqssun/android-display-extend) 等应用投送内容。
 
-An ordinary app can create a `VirtualDisplay` and render it to the external
-screen via a `Presentation` — but that virtual display lacks the `TRUSTED` flag
-(`ADD_TRUSTED_DISPLAY` is a signature-level permission). When an app inside the
-secondary screen starts another activity itself (e.g. tapping a video card in
-Bilibili), `ActivityTaskSupervisor.isCallerAllowedToLaunchOnDisplay` rejects the
-untrusted display and the task silently falls back to the default display —
-the "app jumps back to my phone" bug every screen-mirroring app has.
+## 安装与使用
 
-## How it works
+1. 从 [Releases](https://github.com/li-junlei/ShadowScreen/releases) 下载 APK 并安装。
+2. 启动 Shizuku，并向 ShadowScreen 授权。
+3. 连接外接显示器，打开 ShadowScreen，选择目标显示器并启动副屏。
+4. 副屏显示灰黑色底色及提示：“副屏已就绪，请通过 Extend 等应用向此屏幕投送内容”。
+5. 在 Extend 等应用中选择 ShadowScreen 创建的**虚拟屏编号**，投送应用；投送内容会覆盖提示页。
+6. 停止副屏服务可释放虚拟屏。
 
-```
-┌─ Phone ──────────────────────────────────────────┐   ┌─ External display ─┐
-│  ShadowScreen (foreground service)               │   │                    │
-│                                                  │   │  Presentation      │
-│  Presentation + SurfaceView ─── Surface ───────┼──►│  (fullscreen)      │
-│         ▲                                        │   │                    │
-│  VirtualDisplay (TRUSTED | OWN_DISPLAY_GROUP |  │   └────────────────────┘
-│      ALWAYS_UNLOCKED | ...) ── renders to ──────┘                │
-│         ▲ created as shell uid via Shizuku                        │
-│  IDisplayManager AIDL ◄── ShizukuBinderWrapper ◄── Shizuku server │
-└───────────────────────────────────────────────────┘
-```
+应用内状态卡及常驻通知显示虚拟屏编号、分辨率和是否处于 Shizuku trusted 模式。副屏不提供系统导航栏。
 
-* Shizuku hands us the `display` service binder wrapped so that calls execute
-  as **shell (uid 2000)**, which holds `ADD_TRUSTED_DISPLAY` — so the trusted
-  flags are accepted.
-* No `MediaProjection` is attached (that would force mirror-only mode).
-* Hidden APIs (`IDisplayManager`, `IVirtualDisplayCallback`,
-  `DisplayManagerGlobal`) are compile-only stubs resolved against the real
-  framework at runtime, unblocked by
-  [HiddenApiBypass](https://github.com/LSPosed/AndroidHiddenApiBypass).
-* The virtual display resolution is fixed to the selected display's **physical
-  mode** (`Display.getMode()`); the `SurfaceView` is letterboxed to the same
-  aspect ratio so content is never stretched.
-* Hotplug: on display removal the service detaches the output surface and keeps
-  the virtual display alive. Reconnecting a same-named display reuses its id;
-  stopping the service releases it.
+## 功能与原理
 
-The approach is modeled on
-[jqssun/android-display-mirror](https://github.com/jqssun/android-display-mirror)
-(GPL-3.0) — thanks!
+- **受信任的独立副屏**：通过 Shizuku，以 shell（uid 2000）身份调用 `IDisplayManager` 创建带 `TRUSTED` 的虚拟屏，使普通应用可以在副屏继续启动 Activity。
+- **物理分辨率输出**：按目标显示器 `Display.getMode()` 的物理尺寸创建虚拟屏，`SurfaceView` 等比居中显示，避免逻辑分辨率与物理分辨率不一致导致拉伸。
+- **插拔复用**：断开时挂起输出 Surface，保留虚拟屏；同名显示器重连后复用同一编号。服务停止或进程结束后，重新创建的编号可能变化，无法指定固定编号。
+- **空闲提示**：v0.8 在虚拟屏创建时启动独立的底层提示任务；投送应用覆盖它，重连时不重新启动提示任务，避免覆盖现有内容。
+- **主屏兼容性**：不启用副屏系统装饰，避免 HyperOS 的副屏桌面、导航界面干扰主屏手势和系统图标。
+- **实时状态**：服务广播、显示器监听和 Shizuku 监听驱动状态刷新。
 
-## Requirements
+内容经虚拟屏 → Surface → 外接屏上的 `Presentation` 输出。不绑定 `MediaProjection`，避免被强制为镜像模式。隐藏 API 通过 [HiddenApiBypass](https://github.com/LSPosed/AndroidHiddenApiBypass) 解限；`stubs/` 仅用于编译，不打包进 APK。
 
-* Android 15 (API 35) or newer (public `VirtualDisplayConfig` API)
-* [Shizuku](https://shizuku.rikka.app/) running and this app granted
-* An external display connected (USB-C DP Alt Mode, e.g. XREAL One glasses)
+实现参考 [jqssun/android-display-mirror](https://github.com/jqssun/android-display-mirror)（GPL-3.0）。
 
-## Build
+## 环境要求与验证状态
 
-No Gradle — plain command line build:
+- Android 15（API 35）及以上，建议使用 Shizuku trusted 模式。
+- 支持 USB-C DisplayPort Alt Mode 的手机与外接显示器。
+- 已测试设备：Xiaomi 17 Pro、XREAL One、HyperOS 4.0.0.41、Shizuku+ 13.6.0。
+- 2026-10-10：用户确认 v0.7 创建副屏后，主屏手势与系统图标正常；确认 v0.8 空闲提示功能验证成功。v0.8 编译及 APK 签名验证通过。
+- 尚待单独完成最终验收：B 站打开视频等后续 Activity 留在副屏、物理分辨率显示效果，以及多次拔插后的编号与状态同步。空闲提示验证成功不代表这些项目全部验收完成。
+
+## 已知限制
+
+- Shizuku 不可用时回退到普通、不受信任的虚拟屏，应用后续页面仍可能跳回主屏。
+- 不提供一体化应用启动器，需配合 Extend 等应用。
+- 不同设备的后台 Activity 启动策略可能影响初始提示页，需要实机验证。
+- 包名仍为 `com.ljl.xrealscreen`；服务日志标签仍为 `XREALSubScreen`。
+
+## 构建
+
+不使用 Gradle。需要 JDK 17、Android SDK build-tools 36.1.0 和 android-36 平台，在 Git Bash 中运行；先按本机环境修改 `build.sh` 的 SDK 路径。
 
 ```bash
-# edit SDK paths at the top of build.sh first (JDK 17 + SDK build-tools 36 + android-36 platform)
 bash build.sh
+# 仅在需要安装到设备时执行：
 adb install -r build/app.apk
 ```
 
-Third-party jars are vendored in `libs/`:
+产物为 `build/app.apk`。构建流程：aapt2 → javac → d8 → zipalign → apksigner。`debug.keystore` 不纳入 Git；发布 APK 使用当前本地密钥签名，后续覆盖更新需保留同一密钥。
 
-| Library | License |
+随项目提供的第三方依赖：
+
+| 依赖 | 许可证 |
 |---|---|
 | [Shizuku-API](https://github.com/RikkaApps/Shizuku-API) 13.1.5 | MIT |
 | [HiddenApiBypass](https://github.com/LSPosed/AndroidHiddenApiBypass) 6.1 | LGPL-2.1 |
 
-## Usage
+## 许可证
 
-1. Start Shizuku on the phone, grant ShadowScreen access.
-2. Open ShadowScreen — it lists every connected presentation-capable display.
-3. Tap the display you want. The secondary screen starts and appears on the
-   external display.
-4. Send apps to the secondary screen with a task-launcher that can target a
-   display (e.g. `adb shell am start --display <id>`, scrcpy, or a
-   cast/extend companion app).
-
-Status is shown in-app and in the persistent notification, including the
-created virtual display id and whether it runs in trusted mode.
-
-## Known limitations
-
-* v0.7 disables virtual-display system decorations to avoid starting the HyperOS
-  secondary system launcher/navigation UI. The display remains trusted and hosts
-  independent app tasks; send apps with Extend. An empty display is expected
-  before an app is launched, and no system navigation bar is provided there.
-  On 2026-10-10, the user verified on a Xiaomi 17 Pro running HyperOS 4.0.0.41
-  that primary-screen gestures and system icons remained normal after creating
-  the secondary display. App activity transitions and hotplug behavior have not
-  been revalidated with v0.7.
-
-* Without Shizuku the app falls back to a normal (untrusted) virtual display —
-  the jump-back-to-phone bug returns in that mode.
-* Virtual display ids drift on every rebuild (expected platform behavior).
-* Some external displays negotiate a logical resolution that differs from
-  their physical mode (e.g. a portrait letterbox); ShadowScreen always renders
-  at the physical mode and letterboxes.
-
-## License
-
-GPL-3.0. See [LICENSE](LICENSE).
+GPL-3.0，详见 [LICENSE](LICENSE)。

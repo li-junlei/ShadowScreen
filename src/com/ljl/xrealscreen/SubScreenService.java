@@ -1,5 +1,6 @@
 package com.ljl.xrealscreen;
 
+import android.app.ActivityOptions;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -201,6 +202,19 @@ public class SubScreenService extends Service
             updateNotification(sStatus);
             mVdWidth = vdWidth;
             mVdHeight = vdHeight;
+            if (mVd != null) {
+                // 仅首次创建时启动底层提示，重连时不覆盖已投送的应用。
+                int idleDisplayId = mVd.getDisplay().getDisplayId();
+                ActivityOptions options = ActivityOptions.makeBasic();
+                options.setLaunchDisplayId(idleDisplayId);
+                try {
+                    startActivity(new Intent(this, IdleScreenActivity.class)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            .putExtra(EXTRA_DISPLAY_ID, idleDisplayId), options.toBundle());
+                } catch (RuntimeException e) {
+                    Log.w(TAG, "idle screen launch failed", e);
+                }
+            }
         } else {
             // surface 重建/插拔重连：换输出目标复用同一 VD（displayId 不变），
             // 仅当接的是不同显示器（物理 mode 变了）才 resize
@@ -232,6 +246,7 @@ public class SubScreenService extends Service
 
     private void releaseVd() {
         if (mVd != null) {
+            sendBroadcast(new Intent(IdleScreenActivity.ACTION_CLOSE).setPackage(getPackageName()));
             try {
                 mVd.release();
             } catch (Exception e) {
