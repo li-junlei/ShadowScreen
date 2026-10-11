@@ -9,7 +9,9 @@ BT=$SDK/build-tools/36.1.0
 PLATFORM=$SDK/platforms/android-36/android.jar
 LIBS="libs/shizuku-api.jar;libs/shizuku-aidl.jar;libs/shizuku-shared.jar;libs/shizuku-provider.jar"
 
-rm -rf build gen classes stub_classes dexout
+# Keep the build directory itself: Windows readers can hold a directory handle.
+mkdir -p build
+rm -rf build/* gen classes stub_classes dexout
 mkdir -p build gen classes stub_classes dexout
 
 echo "[1/7] aapt2 compile"
@@ -24,21 +26,22 @@ echo "[2/7] aapt2 link"
 echo "[3/7] javac stubs (compile-only)"
 javac -encoding UTF-8 --release 8 -classpath "$PLATFORM" -d stub_classes \
     stubs/android/hardware/display/*.java \
+    stubs/android/hardware/input/*.java \
     stubs/android/view/DisplayInfo.java \
     stubs/android/media/projection/IMediaProjection.java
 
 echo "[4/7] javac app (argfile 规避 MSYS 对 ; 分隔 classpath 的转换)"
-CP="$(cygpath -w "$PLATFORM");$(cygpath -w libs/shizuku-api.jar);$(cygpath -w libs/shizuku-aidl.jar);$(cygpath -w libs/shizuku-shared.jar);$(cygpath -w libs/shizuku-provider.jar);$(cygpath -w libs/hiddenapibypass.jar);$(cygpath -w libs/axannotation.jar);$(cygpath -w stub_classes)"
+CP="$(cygpath -w "$PLATFORM");$(cygpath -w libs/shizuku-api.jar);$(cygpath -w libs/shizuku-aidl.jar);$(cygpath -w libs/shizuku-shared.jar);$(cygpath -w libs/shizuku-provider.jar);$(cygpath -w libs/hiddenapibypass.jar);$(cygpath -w stub_classes)"
 printf -- "-classpath\n%s\n" "$CP" > build/javac_opts.txt
 javac -encoding UTF-8 --release 8 @build/javac_opts.txt -d classes \
     gen/com/ljl/xrealscreen/R.java src/com/ljl/xrealscreen/*.java
 
-echo "[5/7] d8 (app classes + shizuku jars)"
+echo "[5/7] d8 (app + Shizuku)"
+jar cf build/app-classes.jar -C classes .
 "$BT/d8.bat" --release --lib "$PLATFORM" --classpath stub_classes --min-api 30 \
-    --output dexout classes/com/ljl/xrealscreen/*.class \
+    --output dexout build/app-classes.jar \
     libs/shizuku-api.jar libs/shizuku-aidl.jar libs/shizuku-shared.jar libs/shizuku-provider.jar libs/hiddenapibypass.jar
 
-echo "[6/7] pack dex"
 (cd dexout && jar uf ../build/app.unsigned.apk classes.dex)
 
 echo "[7/7] align + sign"

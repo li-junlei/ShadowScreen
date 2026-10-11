@@ -129,6 +129,15 @@
                 android:visibility="gone" />
         </LinearLayout>
 
+        <Button
+            android:id="@+id/btn_gamepad_forward"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_btn_outline"
+            android:text="GKME / 外接手柄转发（实验）"
+            android:textColor="@color/text_primary" />
+
         <!-- 显示器列表 -->
         <TextView
             android:layout_width="wrap_content"

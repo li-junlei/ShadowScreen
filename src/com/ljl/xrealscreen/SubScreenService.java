@@ -60,6 +60,9 @@ public class SubScreenService extends Service
     /** 供 MainActivity 刷新显示的粗状态 */
     static volatile String sStatus = "未运行";
     static volatile int sTargetDisplayId = -1;
+    /** Input targets the VD, never the physical Presentation display. */
+    static volatile int sVirtualDisplayId = -1;
+    static volatile boolean sInputReady;
 
     private DisplayManager mDm;
     private Presentation mPresentation;
@@ -203,6 +206,9 @@ public class SubScreenService extends Service
             mVdWidth = vdWidth;
             mVdHeight = vdHeight;
             if (mVd != null) {
+                sVirtualDisplayId = mVd.getDisplay().getDisplayId();
+                sInputReady = mTrusted;
+                postStatusChanged();
                 // 仅首次创建时启动底层提示，重连时不覆盖已投送的应用。
                 int idleDisplayId = mVd.getDisplay().getDisplayId();
                 ActivityOptions options = ActivityOptions.makeBasic();
@@ -227,12 +233,15 @@ public class SubScreenService extends Service
             sStatus = "虚拟屏 Display " + mVd.getDisplay().getDisplayId()
                     + "（" + vdWidth + "x" + vdHeight
                     + (mTrusted ? "，Shizuku trusted 模式）" : "）");
+            sInputReady = mTrusted;
             updateNotification(sStatus);
         }
     }
 
     @Override
     public synchronized void onSurfaceDestroyed() {
+        sInputReady = false;
+        postStatusChanged();
         // 挂起而非销毁：保留 VD 让 displayId 不随插拔递增，重连后在
         // onSurfaceReady 的复用分支接回。真正销毁只在 teardown（用户停止）。
         if (mVd != null) {
@@ -245,6 +254,8 @@ public class SubScreenService extends Service
     }
 
     private void releaseVd() {
+        sInputReady = false;
+        sVirtualDisplayId = -1;
         if (mVd != null) {
             sendBroadcast(new Intent(IdleScreenActivity.ACTION_CLOSE).setPackage(getPackageName()));
             try {

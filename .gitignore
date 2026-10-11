@@ -10,3 +10,8 @@ dexout/
 
 # signing
 *.keystore
+
+# Local history and emulator/build evidence (not distributed)
+/archive/
+/tests/*.log
+/tests/mumu-*.xml

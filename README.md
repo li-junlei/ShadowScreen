@@ -4,7 +4,7 @@
 
 将通过 USB-C DisplayPort Alt Mode 连接的 AR 眼镜、便携显示器等设备，变成可独立运行 Android 应用的副屏。通过 Shizuku 创建受信任的虚拟屏，解决副屏应用打开后续页面时跳回手机主屏的问题。
 
-当前版本：**v0.8**。无需 root；需要运行并授权 [Shizuku](https://shizuku.rikka.app/)。配合 [Extend](https://github.com/jqssun/android-display-extend) 等应用投送内容。
+当前版本：**[v0.16](https://github.com/li-junlei/ShadowScreen/releases/tag/v0.16)（仅保留 GKME / 外接手柄转发）**。无需 root；需要运行并授权 [Shizuku](https://shizuku.rikka.app/)。配合 [Extend](https://github.com/jqssun/android-display-extend) 等应用投送内容。更新记录见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 安装与使用
 
@@ -16,6 +16,14 @@
 6. 停止副屏服务可释放虚拟屏。
 
 应用内状态卡及常驻通知显示虚拟屏编号、分辨率和是否处于 Shizuku trusted 模式。副屏不提供系统导航栏。
+
+## GKME / 外接手柄转发
+
+先启动 Shizuku trusted 副屏，通过 Extend 将游戏投送到虚拟屏编号，再打开“GKME / 外接手柄转发”。保持转发页在主屏前台，在其上方显示 GKME 本机模式的悬浮手柄。
+
+转发页收到的 Android 手柄按键、十字键和摇杆事件，经 Shizuku 指定目标虚拟屏发送。停止副屏、Shizuku 断开或退出页面时停止转发并尝试释放输入。重连后重新打开转发页。
+
+v0.16 已删除内置虚拟手柄、原版控件移植、uinput 后端及相关依赖，使用独立安装的 GKME。外部转发曾由用户确认可用；新版删减后尚未在手机复测。GKME 输入必须到达主屏转发页，才能转送副屏。
 
 ## 功能与原理
 
@@ -36,6 +44,7 @@
 - 支持 USB-C DisplayPort Alt Mode 的手机与外接显示器。
 - 已测试设备：Xiaomi 17 Pro、XREAL One、HyperOS 4.0.0.41、Shizuku+ 13.6.0。
 - 2026-10-10：用户确认 v0.7 创建副屏后，主屏手势与系统图标正常；确认 v0.8 空闲提示功能验证成功。v0.8 编译及 APK 签名验证通过。
+- 2026-10-12：v0.16 构建、APK v3 签名、安装包内容检查及 MuMu 主页面入口检查通过；无内置手柄、Kotlin 控件或原生 uinput 库。未操作手机，新版转发效果仍需实机复测。
 - 尚待单独完成最终验收：B 站打开视频等后续 Activity 留在副屏、物理分辨率显示效果，以及多次拔插后的编号与状态同步。空闲提示验证成功不代表这些项目全部验收完成。
 
 ## 已知限制

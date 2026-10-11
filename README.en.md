@@ -4,7 +4,7 @@
 
 Turn a USB-C DisplayPort Alt Mode display, such as AR glasses or a portable monitor, into an independent Android secondary screen. ShadowScreen creates a trusted virtual display through Shizuku so apps can open subsequent activities on that display.
 
-Current version: **v0.8**. No root required. Run and authorize [Shizuku](https://shizuku.rikka.app/), then use [Extend](https://github.com/jqssun/android-display-extend) or a similar app to launch content on the secondary screen.
+Current version: **[v0.16](https://github.com/li-junlei/ShadowScreen/releases/tag/v0.16) (GKME / external controller forwarding only)**. No root required. Run and authorize [Shizuku](https://shizuku.rikka.app/), then use [Extend](https://github.com/jqssun/android-display-extend) or a similar app to launch content on the secondary screen. See [CHANGELOG.md](CHANGELOG.md) for release notes.
 
 ## Installation and usage
 
@@ -16,6 +16,19 @@ Current version: **v0.8**. No root required. Run and authorize [Shizuku](https:/
 6. Stop the service to release the virtual display.
 
 The app and persistent notification show the virtual display id, resolution, and trusted-mode status. No system navigation bar is provided on the secondary screen.
+
+## GKME / external controller forwarding
+
+Start the trusted secondary display and launch the game there through Extend.
+Open the forwarding page on the primary screen and show GKME's local-mode
+floating controller above it. Received Android gamepad/D-pad/joystick events
+are forwarded through Shizuku to the virtual display ID. Exit/disconnect stops
+forwarding and attempts to release inputs. Reopen the page after reconnecting.
+
+v0.16 removes the built-in controller, vendored frontend, uinput backend and
+their dependencies. Use GKME as a separate app. Forwarding was previously
+confirmed by the user; this removal build has not been retested on the phone.
+Input must reach the forwarding page to be forwarded.
 
 ## Features and implementation
 
@@ -31,6 +44,10 @@ Content flows from the virtual display through a Surface into a `Presentation` o
 The approach is modeled on [jqssun/android-display-mirror](https://github.com/jqssun/android-display-mirror) (GPL-3.0).
 
 ## Requirements and validation
+
+2026-10-12: v0.16 build, APK v3 signature, package exclusion checks and the MuMu
+launcher check passed. No embedded widgets, Kotlin controller code or native
+uinput libraries are packaged. Phone forwarding has not been retested.
 
 - Android 15 (API 35) or newer; Shizuku trusted mode is recommended.
 - A phone and external display supporting USB-C DisplayPort Alt Mode.

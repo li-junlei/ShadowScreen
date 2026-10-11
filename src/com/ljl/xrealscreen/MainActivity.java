@@ -1,6 +1,7 @@
 package com.ljl.xrealscreen;
 
 import android.app.Activity;
+import android.app.ActivityOptions;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -93,6 +94,7 @@ public class MainActivity extends Activity {
         findViewById(R.id.btn_stop).setOnClickListener(v ->
                 startService(new Intent(this, SubScreenService.class)
                         .setAction(SubScreenService.ACTION_STOP)));
+        findViewById(R.id.btn_gamepad_forward).setOnClickListener(v -> openGamepad());
 
         IntentFilter f = new IntentFilter(SubScreenService.ACTION_STATUS_CHANGED);
         if (Build.VERSION.SDK_INT >= 33) {
@@ -130,6 +132,8 @@ public class MainActivity extends Activity {
                 : "未运行".equals(s) ? R.color.text_secondary : R.color.warn);
 
         refreshShizuku();
+        boolean canControl = SubScreenService.sInputReady && TrustedDisplayClient.isReady();
+        findViewById(R.id.btn_gamepad_forward).setEnabled(canControl);
         rebuildList();
     }
 
@@ -201,6 +205,18 @@ public class MainActivity extends Activity {
 
     private int dp(int v) {
         return (int) (getResources().getDisplayMetrics().density * v + 0.5f);
+    }
+
+    private void openGamepad() {
+        if (!SubScreenService.sInputReady || !TrustedDisplayClient.isReady()) {
+            Toast.makeText(this, "请先启动 Shizuku trusted 副屏", Toast.LENGTH_LONG).show();
+            return;
+        }
+        ActivityOptions options = ActivityOptions.makeBasic();
+        options.setLaunchDisplayId(Display.DEFAULT_DISPLAY);
+        startActivity(new Intent(this, GamepadActivity.class)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                .putExtra(SubScreenService.EXTRA_DISPLAY_ID, SubScreenService.sVirtualDisplayId), options.toBundle());
     }
 
     private void startSubScreen(int displayId) {
